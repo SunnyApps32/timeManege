@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  front:
+    build:
+      context: "./vuecli"
+      dockerfile: "Dockerfile"
+    ports:
+      - 18082:8080
+    volumes:
+      - ./vuecli/app:/app
+    tty: true
+    environment:
+      - NODE_ENV=development
