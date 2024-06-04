@@ -1,5 +1,5 @@
 <template>
-  <input class="numInput" type="number" :value="value" @input="validate">
+  <input class="numInput" type="number" :value="value" @input="validate" step="0.25">
 </template>
 
 <script>

@@ -12,7 +12,7 @@
                 
                 <div class="menu_item" v-on:click="goToTimeTable">時間割</div>
                 <div class="menu_item" v-on:click="goToBaseSetting">TA/技術補佐員</div>
-                
+                <div class="menu_item" v-on:click="goToTeacherSetting">先生</div>
                 <div class="menu_item" v-on:click="confirmLogout">Logout</div>
             </div>
         </div>
@@ -77,7 +77,14 @@ export default {
                 window.location.reload()
             }
         },
-        
+        goToTeacherSetting() {
+            const nowRoute = this.$route.path
+            if (nowRoute != '/TeacherSetting') {
+                this.$router.push('/TeacherSetting')
+            } else {
+                window.location.reload()
+            }
+        },
 
         confirmLogout() {
       const result = confirm('ログアウトしますか？')

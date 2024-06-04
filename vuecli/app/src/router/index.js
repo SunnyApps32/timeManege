@@ -9,6 +9,7 @@ import TimeTable from '../page/TimeTable.vue';
 import BaseSetting from '../page/BaseSettingPage.vue';
 import Home from '../page/HomePage.vue';
 import LoginView from '../page/LoginView.vue'
+import TeacherSetting from '../page/TeacherSettingPage.vue';
 
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -28,11 +29,13 @@ const routes = [
 
   },
  
-  // {
-  //   path: '/TA',
-  //   name: 'TA',
-  //   component: TA,
-  // },
+  {
+    path: '/TeacherSetting',
+    name: 'TeacherSetting',
+    component: TeacherSetting,
+    
+    meta: { title: 'TeacherSetting', requiresAuth: true}
+  },
   {
     path: '/TimeTable',
     name: 'TimeTable',

@@ -9,7 +9,7 @@
     <table>
       <thead>
         <tr>
-         <th>曜日</th>
+         <th>曜日</th> 
           <th>開始時刻</th>
           <th>終了時刻</th>
           <th>内容</th>
@@ -70,6 +70,7 @@ export default {
     ScheduleForm
   },
   methods: {
+    
     receiveCurrentMonth(month) {
       this.currentMonth = month;
     },
