@@ -10,6 +10,7 @@ import BaseSetting from '../page/BaseSettingPage.vue';
 import Home from '../page/HomePage.vue';
 import LoginView from '../page/LoginView.vue'
 import TeacherSetting from '../page/TeacherSettingPage.vue';
+import Register from '../page/RegisterPage.vue';
 
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -42,6 +43,12 @@ const routes = [
     component: TimeTable,
     meta: { title: 'TimeTable', requiresAuth: true}
 
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
+     meta: { title: 'TimeTable', requiresAuth: false}
   },
   // {
   //   path: '/BaseTA',
