@@ -21,6 +21,6 @@ const firebaseConfig = {
   // Initialize Cloud Firestore and get a reference to the service
   const db = getFirestore(app);
   // Initialize Authentication
-  const auth = getAuth()
+  const auth = getAuth(app)
   
   export default { analytics, db, auth };

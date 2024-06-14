@@ -28,7 +28,10 @@
                 <button class="btn_standard" type="submit" v-on:click="logIn">ログインする</button>
             </div>
 
-            
+            <br>
+            <div>
+                <button class="btn_url" v-on:click="register">新規登録はこちら</button>
+            </div>
 
         </main>
 
@@ -93,6 +96,10 @@ export default {
                     // ローディングアニメーション
                     this.isLoading = false
                 });
+        },
+
+        register(){
+            this.$router.push('/register')
         },
 
         // FirebaseAuthから受け取ったエラーコードを判定しエラーメッセージを表示する
@@ -175,4 +182,33 @@ main {
 .loading_animation_container {
     height: 15px;
     margin-top: 10px;
-}</style>
+}
+
+.btn_url {
+  border-radius: 0px;
+  padding: 0;
+
+  background-color: white;
+  border-color: white;
+  color: blue;
+
+  transform: translate(0, 0px);
+
+}
+
+  
+button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+
+
+</style>

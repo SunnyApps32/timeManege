@@ -5,7 +5,7 @@
       v-on:monthYearReceiver="receiveCurrentMonth" />
     <br />
     <div class="header">
-      <button class="apply-button" @click="handleApply">申請許可</button>
+      <button class="apply-button" :disabled="isReady" @click="handleApply">申請許可</button>
     </div>
 
     <div>
@@ -55,6 +55,7 @@ export default {
       showModal: false,
       selectedDay: null,
       activeTab: '研究室バイト', // 追加: 現在のアクティブなタブを管理
+      isReady: true,
     };
   },
   components: {
@@ -66,11 +67,21 @@ export default {
       if (user) {
         this.uid = user.uid;
         this.checkAndCreateUserDoc();
+        this.checkReadyStatus();
        // this.getMonthlyCalendar();
       } else {
         console.log('User is not logged in.');
       }
     });
+  },
+  watch: {
+    currentMonth: {
+      handler() {
+        // newMonthが変更されたときの処理を記述
+        this.checkReadyStatus();
+      },
+      immediate: true, // ページロード時にも呼び出す
+    },
   },
   methods: {
     openModal(day) {
@@ -200,9 +211,63 @@ export default {
         return '';
       }
     },
-    handleApply() {
-      alert('申請ボタンがクリックされました');
+    async checkReadyStatus() {
+      try {
+        const docRef = doc(db, 'teacher', this.currentMonth);
+        const docSnapshot = await getDoc(docRef);
+        if (docSnapshot.exists()) {
+          this.isReady = docSnapshot.data().isReady || false;
+        } else {
+          this.isReady = false;
+          console.log('No such document!');
+        }
+        console.log(this.isReady) 
+        console.log(this.currentMonth)
+      } catch (error) {
+
+        console.error('Error checking ready status: ', error);
+      }
     },
+
+    async handleApply() {
+     
+      try {
+        const docRef = doc(db, 'teacher', this.currentMonth);
+        await setDoc(docRef, { isReady: true });
+        
+        const api_url = "https://script.google.com/macros/s/AKfycbwNopO0_rU9PS_VLkm-7eBxe8ijRCyqwI14KcRlsDw3ZvsOkbxrjeJP5T0mERlLqRht/exec"
+
+        const params = new URLSearchParams();
+    params.append('param1', 'value1');
+    params.append('param2', 'value2');
+
+        fetch(api_url, {
+        method: "get",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+         mode: 'no-cors'
+        
+        //body: params,
+    })
+        .then((response) => {
+            response.text().then(() => {
+                //alert(text);
+                alert('申請が許可されました');
+            });
+        })
+        .catch((error) => {
+            alert(error.message);
+        });
+    
+
+      } catch (error) {
+        console.error('Error updating document: ', error);
+        alert('申請の許可に失敗しました');
+      }
+    },
+
+
   },
 };
 </script>
@@ -252,8 +317,7 @@ th {
   color: white;
 }
 
-.header {
-}
+
 
 .apply-button {
   float: right;
@@ -269,6 +333,12 @@ th {
 .apply-button:hover {
   background-color: #0056b3;
 }
+
+.apply-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
 
 .day {
   width: 50px;
