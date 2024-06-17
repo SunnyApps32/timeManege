@@ -62,7 +62,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped> 
 .nextButton {
   cursor: pointer;
 }
