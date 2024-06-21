@@ -1,19 +1,33 @@
 <template>
     <header>
-        <div class="header_container">
-            <h1 class="pageTitle">{{ pageTitle }}</h1>
-            <div class="login_name">&nbsp;{{ login_name }}</div>
+        <div v-if="user && user.type === 'student'" >
+            <div class="header_container">
+                <h1 class="pageTitle">{{ pageTitle }}</h1>
+                <div class="login_name">&nbsp;{{ login_name }}</div>
 
-            <div class="header_menu">
-                <div class="menu_item" v-on:click="goToHome">Home</div>
-                <div class="menu_item" v-on:click="goToResearchRoomJob">研究室バイト</div>
-                <!-- <div class="menu_item" v-on:click="goToTA">TA</div>
+                <div class="header_menu">
+                    <div class="menu_item" v-on:click="goToHome">Home</div>
+                    <div class="menu_item" v-on:click="goToResearchRoomJob">研究室バイト</div>
+                    <!-- <div class="menu_item" v-on:click="goToTA">TA</div>
                 <div class="menu_item" v-on:click="goToSkillSporter">技術補佐員</div> -->
-                
-                <div class="menu_item" v-on:click="goToTimeTable">時間割</div>
-                <div class="menu_item" v-on:click="goToBaseSetting">TA/技術補佐員</div>
-                <div class="menu_item" v-on:click="goToTeacherSetting">先生</div>
-                <div class="menu_item" v-on:click="confirmLogout">Logout</div>
+
+                    <div class="menu_item" v-on:click="goToTimeTable">時間割</div>
+                    <div class="menu_item" v-on:click="goToBaseSetting">TA/技術補佐員</div>
+                    <div class="menu_item" v-on:click="confirmLogout">Logout</div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="user && user.type === 'teacher'" >
+            <div class="header_container">
+                <h1 class="pageTitle">{{ pageTitle }}</h1>
+                <div class="login_name">&nbsp;{{ login_name }}</div>
+
+                <div class="header_menu">
+                    <div class="menu_item" v-on:click="goToTeacherSetting">Home</div>
+                    <div class="menu_item" v-on:click="goToUserList">申請者一覧</div>
+                    <div class="menu_item" v-on:click="confirmLogout">Logout</div>
+                </div>
             </div>
         </div>
     </header>
@@ -21,15 +35,56 @@
 
 
 <script>
-  import { signOut } from "firebase/auth";
-  import Firebase from "../firebase/firebase";
-  const auth = Firebase.auth
+import { signOut } from "firebase/auth";
+import Firebase from "../firebase/firebase";
+import { onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc, } from 'firebase/firestore';
+const db = getFirestore();
+const auth = Firebase.auth
+
 export default {
     props: {
         pageTitle: String,
     },
+    data() {
+        return {
+            uid: '',
+            user: null,
+
+        }
+    },
+    created() {
+        onAuthStateChanged(auth, (user) => {
+      if (user) {
+        this.uid = user.uid;
+     
+        
+        this.fetchUserInfo()
+       
+       
+
+
+      } else {
+        console.log('User is not logged in.');
+      }
+    });
+      
+        
+    },
     methods: {
-         goToHome() {
+        async fetchUserInfo() {
+            const docRef = doc(db, 'users', this.uid);
+            const docSnapshot = await getDoc(docRef);
+
+            if (docSnapshot.exists()) {
+                this.user = docSnapshot.data();
+                console.log(this.user)
+                
+            } else {
+                console.log('No');
+            }
+        },
+        goToHome() {
             const nowRoute = this.$route.path
             if (nowRoute != '/') {
                 this.$router.push('/')
@@ -85,26 +140,34 @@ export default {
                 window.location.reload()
             }
         },
+        goToUserList() {
+            const nowRoute = this.$route.path
+            if (nowRoute != '/ready-users') {
+                this.$router.push('/ready-users')
+            } else {
+                window.location.reload()
+            }
+        },
 
         confirmLogout() {
-      const result = confirm('ログアウトしますか？')
-      if (!result) { return }
-      this.logOut()
-    },
+            const result = confirm('ログアウトしますか？')
+            if (!result) { return }
+            this.logOut()
+        },
 
         //ログアウト処理
         logOut() {
-          // ユーザー情報とイベント内容をログに記録
-          signOut(auth).then(() => {
-            // Sign-out successful.
-            this.$router.push('/login')
-            console.log("ログアウト成功")
-            alert('ログアウトしました')
-          }).catch((error) => {
-            // An error happened.
-            console.log('ログアウトエラー: error ->' + error)
-            alert('ログアウト処理でエラーが発生しました')
-          });
+            // ユーザー情報とイベント内容をログに記録
+            signOut(auth).then(() => {
+                // Sign-out successful.
+                this.$router.push('/login')
+                console.log("ログアウト成功")
+                alert('ログアウトしました')
+            }).catch((error) => {
+                // An error happened.
+                console.log('ログアウトエラー: error ->' + error)
+                alert('ログアウト処理でエラーが発生しました')
+            });
         },
     }
 }

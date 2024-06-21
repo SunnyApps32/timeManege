@@ -1,7 +1,7 @@
 <template>
   <div>
     <br />
-    <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear" @save="receiveAll" 
+    <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear" @save="receiveAll"
       v-on:monthYearReceiver="receiveCurrentMonth" />
     <br />
     <div class="header">
@@ -23,7 +23,9 @@
             <td>{{ day.date }}</td>
             <td>{{ day.weekday }}</td>
             <td @click="day.isWeekend ? null : openModal(day)">
-              <div v-for="note in day.notes" :key="note">{{ note }}</div>
+              <div v-for="note in day.notes" :key="note.startTime">
+                <label>{{ note.startTime }} ~ {{ note.endTime }}</label>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -68,7 +70,7 @@ export default {
         this.uid = user.uid;
         this.checkAndCreateUserDoc();
         this.checkReadyStatus();
-       // this.getMonthlyCalendar();
+        // this.getMonthlyCalendar();
       } else {
         console.log('User is not logged in.');
       }
@@ -108,7 +110,11 @@ export default {
           this.selectedDay.notes = [];
         }
 
-        this.selectedDay.notes.push(`${timeData.startTime}~${timeData.endTime}`);
+        this.selectedDay.notes.push({
+            startTime: timeData.startTime,
+            endTime: timeData.endTime,
+            content: '記入不可'
+          });
         this.showModal = false;
       } catch (error) {
         console.error('Error adding : ', error);
@@ -146,9 +152,24 @@ export default {
           if (day.date === entry.day) {
             if (!day.notes) {
               day.notes = [];
+            }else{
+              day.notes.push({
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+            content: this.activeTab
+          });
+              console.log(day.notes)
+              day.notes.sort((a, b) => {
+                console.log(a.startTime)
+                const [aHours, aMinutes] = a.startTime.split(':').map(Number);
+                const [bHours, bMinutes] = b.startTime.split(':').map(Number);
+                return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
+              })
             }
-            day.notes.push(`${entry.startTime}~${entry.endTime}`);
+           
           }
+
+       
         }
       }
     },
@@ -221,7 +242,7 @@ export default {
           this.isReady = false;
           console.log('No such document!');
         }
-        console.log(this.isReady) 
+        console.log(this.isReady)
         console.log(this.currentMonth)
       } catch (error) {
 
@@ -230,36 +251,36 @@ export default {
     },
 
     async handleApply() {
-     
+
       try {
         const docRef = doc(db, 'teacher', this.currentMonth);
         await setDoc(docRef, { isReady: true });
-        
+
         const api_url = "https://script.google.com/macros/s/AKfycbwNopO0_rU9PS_VLkm-7eBxe8ijRCyqwI14KcRlsDw3ZvsOkbxrjeJP5T0mERlLqRht/exec"
 
         const params = new URLSearchParams();
-    params.append('param1', 'value1');
-    params.append('param2', 'value2');
+        params.append('param1', 'value1');
+        params.append('param2', 'value2');
 
         fetch(api_url, {
-        method: "get",
-        headers: {
+          method: "get",
+          headers: {
             "Content-Type": "application/x-www-form-urlencoded"
-        },
-         mode: 'no-cors'
-        
-        //body: params,
-    })
-        .then((response) => {
-            response.text().then(() => {
-                //alert(text);
-                alert('申請が許可されました');
-            });
+          },
+          mode: 'no-cors'
+
+          //body: params,
         })
-        .catch((error) => {
+          .then((response) => {
+            response.text().then(() => {
+              //alert(text);
+              alert('申請が許可されました');
+            });
+          })
+          .catch((error) => {
             alert(error.message);
-        });
-    
+          });
+
 
       } catch (error) {
         console.error('Error updating document: ', error);

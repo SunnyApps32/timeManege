@@ -1,5 +1,5 @@
 // src/router/index.ts
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 
 import ResearchRoomJob from '../page/ResearchRoomJob.vue';
 // import TA from '../page/TA.vue';
@@ -11,6 +11,8 @@ import Home from '../page/HomePage.vue';
 import LoginView from '../page/LoginView.vue'
 import TeacherSetting from '../page/TeacherSettingPage.vue';
 import Register from '../page/RegisterPage.vue';
+import ReadyUsers from '../page/ReadyUsers.vue';
+import UserDetail from '../page/UserDetail.vue';
 
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
@@ -21,6 +23,18 @@ const routes = [
     component: Home,
     meta: { title: 'Home', requiresAuth: true}
 
+  },
+
+  {
+    path: '/ready-users',
+    name: 'ReadyUsers',
+    component: ReadyUsers
+  },
+  {
+    path: '/user/:userId',
+    name: 'UserDetail',
+    component: UserDetail,
+    props: true
   },
   {
     path: '/ResearchRoomJob',
@@ -76,13 +90,13 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 
 
 router.afterEach((titleString) => {
-  document.title = titleString.meta.title + ' | Make TimeTable'
+  document.title = titleString.meta.title + ' | TimeManage'
 });
 
 // 画面遷移前にログイン済みかをチェックして、未ログイン時はログイン画面に強制遷移させる
