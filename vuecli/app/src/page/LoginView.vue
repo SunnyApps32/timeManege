@@ -83,7 +83,11 @@ export default {
                 .then((userCredential) => {
                     const user = userCredential.user;
                     console.log("ログイン成功 " + user.email)
-                    this.goToHome()
+
+                 
+                        this.goToHome()
+                    
+                  
                 })
 
                 // サインイン失敗時

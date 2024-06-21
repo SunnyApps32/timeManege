@@ -35,7 +35,7 @@
         </th>
     </table>
     <div>
-        <button @click="save">保存</button>
+        <button @click="save" :disabled="!isFormComplete">保存</button>
       </div>
       </div>
     </div>
@@ -68,6 +68,9 @@
     endHours() {
       // 開始時刻よりも後の時間のみを選択可能にする
       return this.hours.slice(this.startHour ? parseInt(this.startHour) : 9, 19);
+    },
+    isFormComplete() {
+      return this.startHour && this.startMinute && this.endHour && this.endMinute;
     }
   },
     methods: {
