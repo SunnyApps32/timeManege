@@ -222,9 +222,9 @@ export default {
       if (index !== -1) {
         this.Calendar[index].notes = [];
       }
-      if (this.userisReady == true){
+      //if (this.userisReady == true){
         this.saveCalendarData();
-      }
+     // }
 
     },
 
