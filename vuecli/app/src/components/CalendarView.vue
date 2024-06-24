@@ -6,11 +6,11 @@
 
     </div>
     <div v-show=!isLoading>
-    <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear"
-      v-on:monthYearReceiver="receiveCurrentMonth" />
+      <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear"
+        v-on:monthYearReceiver="receiveCurrentMonth" />
     </div>
 
-  <div v-show=isLoading> Loading... (最大数十秒お待ちください)</div>
+    <div v-show=isLoading> Loading... (最大数十秒お待ちください)</div>
     <br />
     <div class="header">
       <button class="apply-button" :disabled="!isReady" @click="handleApply"
@@ -21,7 +21,7 @@
         <button :class="{ active: activeTab === '技術補佐員' }" @click="activeTab = '技術補佐員'">技術補佐員</button>
       </div>
     </div>
-  
+
 
     <div>
       <br />
@@ -157,27 +157,27 @@ export default {
     getFormattedDuration(notes) {
       let durationHours = 0
       let durationMinutes = 0
-      for (const note of notes){
+      for (const note of notes) {
         const [startHours, startMinutes] = note.startTime.split(':').map(Number);
-      const [endHours, endMinutes] = note.endTime.split(':').map(Number);
+        const [endHours, endMinutes] = note.endTime.split(':').map(Number);
 
-      const startDate = new Date(0, 0, 0, startHours, startMinutes);
-      const endDate = new Date(0, 0, 0, endHours, endMinutes);
+        const startDate = new Date(0, 0, 0, startHours, startMinutes);
+        const endDate = new Date(0, 0, 0, endHours, endMinutes);
 
-      durationHours += endDate.getHours() - startDate.getHours();
-      durationMinutes += endDate.getMinutes() - startDate.getMinutes();
+        durationHours += endDate.getHours() - startDate.getHours();
+        durationMinutes += endDate.getMinutes() - startDate.getMinutes();
 
-      if (durationMinutes < 0) {
-        durationMinutes += 60;
-        durationHours -= 1;
-      }else if (durationMinutes >= 60){
-        durationMinutes -= 60;
-        durationHours += 1;
+        if (durationMinutes < 0) {
+          durationMinutes += 60;
+          durationHours -= 1;
+        } else if (durationMinutes >= 60) {
+          durationMinutes -= 60;
+          durationHours += 1;
+        }
+
       }
 
-      }
-     
-      if (durationHours == 0 && durationMinutes == 0){
+      if (durationHours == 0 && durationMinutes == 0) {
         return '';
       }
       return `${durationHours}:${durationMinutes.toString().padStart(2, '0')}`;
@@ -194,6 +194,35 @@ export default {
             }
           }
           console.log(this.Calendar)
+
+          this.TAAndTechAssistantData = []
+          //           this.teacherData = [],
+          //           this.ResearchRoomJobData = [],
+
+
+          for (const day of this.Calendar) {
+            for (const note of day.notes) {
+              console.log(note.content)
+              if (note.content == "TA" || note.content == "技術補佐員") {
+                this.TAAndTechAssistantData.push({
+                  startTime: note.startTime,
+                  endTime: note.endTime,
+                  role: note.content,
+                  date: day.date,
+                })
+              }
+              if (note.content == "時間割") {
+                this.TAAndTechAssistantData.push({
+                  startTime: note.startTime,
+                  endTime: note.endTime,
+                  role: note.content,
+                  day: day.day,
+                })
+              }
+
+            }
+          }
+
           return true;
         } else {
           return false
@@ -222,9 +251,9 @@ export default {
       if (index !== -1) {
         this.Calendar[index].notes = [];
       }
-      if (this.userisReady == true){
+      //if (this.userisReady == true) {
         this.saveCalendarData();
-      }
+      //}
 
     },
 
@@ -253,8 +282,8 @@ export default {
 
 
       this.TAAndTechAssistantData = []
-        //           this.teacherData = [],
-        //           this.ResearchRoomJobData = [],
+      //           this.teacherData = [],
+      //           this.ResearchRoomJobData = [],
 
 
       for (const day of this.Calendar) {
@@ -280,17 +309,17 @@ export default {
         }
       }
       this.Calendar = [],
-      this.getMonthlyCalendar(); //今月のカレンダー
+        this.getMonthlyCalendar(); //今月のカレンダー
       await this.fetchTeacherData(); //先生のデータを取得
 
       console.log(this.TAAndTechAssistantData)
       await this.fetchResearchRoomJobData();
       await this.updateCalendarWithTAAndTechAssistantData();
 
-   //   if (this.userisReady == true){
-        await this.saveCalendarData();
-     // }
-    
+      //   if (this.userisReady == true){
+      await this.saveCalendarData();
+      // }
+
     },
 
     //先生から申請許可が出ているか，自分が申請しているか確認
@@ -370,33 +399,33 @@ export default {
         const querySnapshot = await getDocs(docRef);
         this.ResearchRoomJobData = querySnapshot.docs.map(doc => doc.data());
 
-        if(this.isReady){
+        if (this.isReady) {
           this.distributeWorkHours();
         }
 
         this.process();
-       
-       
-       
+
+
+
       } catch (error) {
         console.error('Error fetching Research Room Job data: ', error);
       }
     },
 
-    process(){
-      if (this.chanceCount >= this.maxRoopCount){
-          this.chanceCount = 0;
-          console.log("アルゴリズム1では，割り振れませんでした")
-          this.getMonthlyCalendar();
-
-          const result = confirm('自動割り振りに失敗しました．今月の総バイト時間を修正することをお勧めします．再度自動振り分けを実行しますか？（再度実行することで，割り振れることもあります．）')
-            if (!result) { return }
-            this.distributeWorkHours();
-            this.process();
-
-
-        }
+    process() {
+      if (this.chanceCount >= this.maxRoopCount) {
         this.chanceCount = 0;
+        console.log("アルゴリズム1では，割り振れませんでした")
+        this.getMonthlyCalendar();
+
+        const result = confirm('自動割り振りに失敗しました．今月の総バイト時間を修正することをお勧めします．再度自動振り分けを実行しますか？（再度実行することで，割り振れることもあります．）')
+        if (!result) { return }
+        this.distributeWorkHours();
+        this.process();
+
+
+      }
+      this.chanceCount = 0;
     },
 
     //calendarにTA, 技術補佐員の予定を挿入
@@ -519,7 +548,7 @@ export default {
         const totalWorkMinutes = parseFloat(job.time) * 60;
         this.assignWork(weekdays, totalWorkMinutes, job, weeklyHours);
       }
-     
+
     },
 
 
@@ -540,62 +569,62 @@ export default {
 
 
     assignWork(weekdays, remainingMinutes, job, weeklyHours) {
-  while (remainingMinutes > 0 && this.roopCount < this.maxRoopCount) {
-    this.roopCount++;
-    const randomIndex = Math.floor(Math.random() * weekdays.length);
-    const day = weekdays[randomIndex];
-    const weekNumber = this.getWeekNumber(day);
-    
-    // 週ごとの合計時間を計算
-    if (!weeklyHours[weekNumber]) {
-      weeklyHours[weekNumber] = 0;
-    }
-    // 19時間45分を分に変換
-    const maxWeeklyMinutes = 19 * 60 + 45;
-    const maxMinutes = Math.min(345, maxWeeklyMinutes - weeklyHours[weekNumber]); // 週の残り時間を考慮
-    if (maxMinutes <= 0) {
-      continue; // 週の残り時間がない場合、次の日へ
-    }
+      while (remainingMinutes > 0 && this.roopCount < this.maxRoopCount) {
+        this.roopCount++;
+        const randomIndex = Math.floor(Math.random() * weekdays.length);
+        const day = weekdays[randomIndex];
+        const weekNumber = this.getWeekNumber(day);
 
-    let minMinutes = 0;
-    if (remainingMinutes > 1800) {
-      minMinutes = 360;
-    }else if (remainingMinutes > 120){
-      minMinutes = 120;
-    }
-     else {
-      minMinutes = remainingMinutes;
-    }
+        // 週ごとの合計時間を計算
+        if (!weeklyHours[weekNumber]) {
+          weeklyHours[weekNumber] = 0;
+        }
+        // 19時間45分を分に変換
+        const maxWeeklyMinutes = 19 * 60 + 45;
+        const maxMinutes = Math.min(345, maxWeeklyMinutes - weeklyHours[weekNumber]); // 週の残り時間を考慮
+        if (maxMinutes <= 0) {
+          continue; // 週の残り時間がない場合、次の日へ
+        }
 
-    const maxQuarters = Math.floor(Math.min(remainingMinutes, maxMinutes) / 15);
-    const minQuarters = Math.floor(Math.min(remainingMinutes, minMinutes) / 15);
-    const randomQuarters = Math.floor(Math.random() * (maxQuarters - minQuarters + 1)) + minQuarters;
-    let workMinutes = randomQuarters * 15;
+        let minMinutes = 0;
+        if (remainingMinutes > 1800) {
+          minMinutes = 360;
+        } else if (remainingMinutes > 120) {
+          minMinutes = 120;
+        }
+        else {
+          minMinutes = remainingMinutes;
+        }
 
-    // 1回の勤務が6時間を超えないようにするチェック
-    const maxWorkMinutesPerShift = 6 * 60; // 6時間を分に変換
-    if (workMinutes > maxWorkMinutesPerShift) {
-      workMinutes = maxWorkMinutesPerShift;
-    }
+        const maxQuarters = Math.floor(Math.min(remainingMinutes, maxMinutes) / 15);
+        const minQuarters = Math.floor(Math.min(remainingMinutes, minMinutes) / 15);
+        const randomQuarters = Math.floor(Math.random() * (maxQuarters - minQuarters + 1)) + minQuarters;
+        let workMinutes = randomQuarters * 15;
 
-    const newStart = this.convertTimeToMinutes(this.generateRandomTime(workMinutes));
-    const newEnd = newStart + workMinutes;
+        // 1回の勤務が6時間を超えないようにするチェック
+        const maxWorkMinutesPerShift = 6 * 60; // 6時間を分に変換
+        if (workMinutes > maxWorkMinutesPerShift) {
+          workMinutes = maxWorkMinutesPerShift;
+        }
 
-    if (this.checkAvailability(day, newStart, newEnd)) {
-      this.assignWorkToDay(day, newStart, newEnd, job.content);
-      remainingMinutes -= workMinutes;
-      weeklyHours[weekNumber] += workMinutes;
-    }
-  }
-  this.roopCount = 0;
+        const newStart = this.convertTimeToMinutes(this.generateRandomTime(workMinutes));
+        const newEnd = newStart + workMinutes;
 
-  while (remainingMinutes != 0 && this.chanceCount < this.maxRoopCount) {
-    this.chanceCount++;
+        if (this.checkAvailability(day, newStart, newEnd)) {
+          this.assignWorkToDay(day, newStart, newEnd, job.content);
+          remainingMinutes -= workMinutes;
+          weeklyHours[weekNumber] += workMinutes;
+        }
+      }
+      this.roopCount = 0;
 
-    this.getMonthlyCalendar();
-    this.distributeWorkHours();
-  }
-},
+      while (remainingMinutes != 0 && this.chanceCount < this.maxRoopCount) {
+        this.chanceCount++;
+
+        this.getMonthlyCalendar();
+        this.distributeWorkHours();
+      }
+    },
 
     getWeekNumber(date) {
       const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
@@ -605,50 +634,50 @@ export default {
 
     //重複確認＆ルールかくにん
     checkAvailability(day, newStart, newEnd) {
-  const dayObj = this.Calendar.find(d => d.date === day.getDate());
-  if (!dayObj) return false;
+      const dayObj = this.Calendar.find(d => d.date === day.getDate());
+      if (!dayObj) return false;
 
-  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-  const existingSchedules = [
-    ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()]),
-    ...this.teacherData.filter(item => item.day === day.getDate()),
-    ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
-  ];
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+      const existingSchedules = [
+        ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()]),
+        ...this.teacherData.filter(item => item.day === day.getDate()),
+        ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
+      ];
 
-  const labJobCount = dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員').length;
-  const labJobs = [
-    ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
-  ];
-  if (labJobCount == 2) {
-    return false;
-  } else if (labJobCount == 1) {
-    if (!(newEnd < this.convertTimeToMinutes(labJobs[0].startTime) - 45 || newStart > this.convertTimeToMinutes(labJobs[0].endTime) + 45)) {
-      return false;
-    }
-  }
+      const labJobCount = dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員').length;
+      const labJobs = [
+        ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
+      ];
+      if (labJobCount == 2) {
+        return false;
+      } else if (labJobCount == 1) {
+        if (!(newEnd < this.convertTimeToMinutes(labJobs[0].startTime) - 45 || newStart > this.convertTimeToMinutes(labJobs[0].endTime) + 45)) {
+          return false;
+        }
+      }
 
-  for (const schedule of existingSchedules) {
-    const existingStart = this.convertTimeToMinutes(schedule.startTime);
-    const existingEnd = this.convertTimeToMinutes(schedule.endTime);
-    if (!(newEnd < existingStart || newStart > existingEnd)) {
-      return false;
-    }
-  }
+      for (const schedule of existingSchedules) {
+        const existingStart = this.convertTimeToMinutes(schedule.startTime);
+        const existingEnd = this.convertTimeToMinutes(schedule.endTime);
+        if (!(newEnd < existingStart || newStart > existingEnd)) {
+          return false;
+        }
+      }
 
-  // 1日の勤務時間が7時間45分を超えないか確認
-  const dayTotalMinutes = dayObj.notes.reduce((total, note) => {
-    const noteStart = this.convertTimeToMinutes(note.startTime);
-    const noteEnd = this.convertTimeToMinutes(note.endTime);
-    return total + (noteEnd - noteStart);
-  }, 0);
-  if (dayTotalMinutes + (newEnd - newStart) > 7 * 60 + 45) {
-    return false;
-  }
+      // 1日の勤務時間が7時間45分を超えないか確認
+      const dayTotalMinutes = dayObj.notes.reduce((total, note) => {
+        const noteStart = this.convertTimeToMinutes(note.startTime);
+        const noteEnd = this.convertTimeToMinutes(note.endTime);
+        return total + (noteEnd - noteStart);
+      }, 0);
+      if (dayTotalMinutes + (newEnd - newStart) > 7 * 60 + 45) {
+        return false;
+      }
 
-  const startOfDayMinutes = 8 * 60 + 30;
-  const endOfDayMinutes = 17 * 60 + 15;
-  return newStart >= startOfDayMinutes && newEnd <= endOfDayMinutes;
-},
+      const startOfDayMinutes = 8 * 60 + 30;
+      const endOfDayMinutes = 17 * 60 + 15;
+      return newStart >= startOfDayMinutes && newEnd <= endOfDayMinutes;
+    },
 
 
     generateRandomTime(workMinutes) {
@@ -737,6 +766,27 @@ export default {
         const calendarExists = await this.fetchCalender();
         if (calendarExists) {
           console.log('Calendar exists and has been fetched.');
+
+          let totalHou = 0
+          try {
+            const docRef = collection(db, 'users', this.uid, 'jobItems', this.currentMonth, 'item');
+            const querySnapshot = await getDocs(docRef);
+            const a = querySnapshot.docs.map(doc => doc.data());
+            for (const i of a) {
+              totalHou += i.time
+            }
+            console.log("total:" + totalHou)
+
+          } catch (error) {
+            console.error('Error fetching Research Room Job data: ', error);
+          }
+          if (this.totalHours != totalHou) {
+            console.log("total:" + totalHou)
+            this.Calendar = []
+            this.getMonthlyCalendar();
+            await this.fetchResearchRoomJobData(); // Fetch research room job data
+            await this.updateCalendarWithTAAndTechAssistantData(); // Update the calendar with TA and Technical Assistant data
+          }
         } else {
           await this.fetchTAAndTechAssistantData(); // Fetch TA and Technical Assistant data
           await this.fetchTeacherData(); // Fetch teacher data
