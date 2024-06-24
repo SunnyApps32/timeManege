@@ -159,13 +159,15 @@ const routes = [
   {
     path: '/ready-users',
     name: 'ReadyUsers',
-    component: ReadyUsers
+    component: ReadyUsers,
+    meta: { title: '申請ユーザ一覧', requiresAuth: true}
   },
   {
     path: '/user/:userId/:currentMonth_',
     name: 'UserDetail',
     component: UserDetail,
-    props: true
+    props: true,
+    meta: { title: 'ユーザ詳細', requiresAuth: true}
   },
   {
     path: '/ResearchRoomJob',

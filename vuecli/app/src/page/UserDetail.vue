@@ -1,18 +1,18 @@
 <template>
   <div>
-    <Menu pageTitle="" />
-    <br/>
+    <Menu pageTitle="ユーザ詳細" />
+    <br />
     <button class="back-button" @click="goBack">戻る</button>
     <p class="apply-button">ステータス：{{ userisReady ? '確定済' : '未申請' }}</p>
 
-    {{this.currentMonth}}
+    {{ this.currentMonth }}
     <h3 class="user-info">{{ user ? `${user.studentNum} ${user.name}` : 'Loading...' }}</h3>
     <br />
-   
+
 
     <br />
     <div class="header">
-   
+
       <div class="tabs">
         <button :class="{ active: activeTab === '研究室バイト' }" @click="activeTab = '研究室バイト'">研究室バイト</button>
         <button :class="{ active: activeTab === 'TA' }" @click="activeTab = 'TA'">TA</button>
@@ -27,16 +27,22 @@
             <th class="day">日付</th>
             <th class="day">曜日</th>
             <th>内容</th>
+            <th>時間数</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="day in filteredCalendar" :key="day.date" :class="getDayClass(day)">
             <td>{{ day.date }}</td>
             <td>{{ day.weekday }}</td>
-            <td >
+            <td @click="activeTab === '研究室バイト' ? null : handleCellClick(day)">
               <div v-for="note in day.notes" :key="note.startTime">
                 <label>{{ note.startTime }} ~ {{ note.endTime }} ({{ note.content }})</label>
               </div>
+            </td>
+            <td>
+            
+                <label>{{ getFormattedDuration(day.notes) }} </label>
+     
             </td>
           </tr>
         </tbody>
@@ -44,27 +50,27 @@
 
       <table>
 
-<tbody>
+        <tbody>
 
-  <!-- 合計時間の行 -->
-  <tr>
-    <td style="text-align: right;"><strong>合計時間数:</strong></td>
-    <td>{{ totalHours.toFixed(2) }} 時間</td>
-  </tr>
-  <!-- 時給の入力フォーム -->
-  <tr>
-    <td style="text-align: right;"><strong>時給:</strong></td>
-    <td>
-      <input v-model.number="hourlyRate" type="number" placeholder="Enter Hourly Rate" />円
-    </td>
-  </tr>
-  <!-- 月収の行 -->
-  <tr>
-    <td style="text-align: right;"><strong>給与:</strong></td>
-    <td>{{ monthlyEarnings.toFixed(0) }} 円</td>
-  </tr>
-</tbody>
-</table>
+          <!-- 合計時間の行 -->
+          <tr>
+            <td style="text-align: right;"><strong>合計時間数:</strong></td>
+            <td>{{ totalHours.toFixed(2) }} 時間</td>
+          </tr>
+          <!-- 時給の入力フォーム -->
+          <tr>
+            <td style="text-align: right;"><strong>時給:</strong></td>
+            <td>
+              <input v-model.number="hourlyRate" type="number" placeholder="Enter Hourly Rate" />円
+            </td>
+          </tr>
+          <!-- 月収の行 -->
+          <tr>
+            <td style="text-align: right;"><strong>給与:</strong></td>
+            <td>{{ monthlyEarnings.toFixed(0) }} 円</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     <TimePickerModal :show="showModal" @close="closeModal" @save="saveTime" />
   </div>
@@ -81,7 +87,7 @@ const db = getFirestore();
 export default {
   props: {
     userId: String,
-    currentMonth_: String, 
+    currentMonth_: String,
   },
   data() {
     return {
@@ -95,7 +101,7 @@ export default {
       uid: this.userId,
       showModal: false,
       selectedDay: null,
-      activeTab: '研究室バイト', // 追加: 現在のアクティブなタブを管理
+      activeTab: '研究室バイト',
       isReady: false,
       userisReady: false,
       user: null,
@@ -113,28 +119,55 @@ export default {
     this.checkReadyStatus();
   },
   methods: {
+    getFormattedDuration(notes) {
+      let durationHours = 0
+      let durationMinutes = 0
+      for (const note of notes){
+        const [startHours, startMinutes] = note.startTime.split(':').map(Number);
+      const [endHours, endMinutes] = note.endTime.split(':').map(Number);
 
-    
-    async fetchUserInfo(){
+      const startDate = new Date(0, 0, 0, startHours, startMinutes);
+      const endDate = new Date(0, 0, 0, endHours, endMinutes);
+
+      durationHours += endDate.getHours() - startDate.getHours();
+      durationMinutes += endDate.getMinutes() - startDate.getMinutes();
+
+      if (durationMinutes < 0) {
+        durationMinutes += 60;
+        durationHours -= 1;
+      }else if (durationMinutes >= 60){
+        durationMinutes -= 60;
+        durationHours += 1;
+      }
+
+      }
+     
+      if (durationHours == 0 && durationMinutes == 0){
+        return '';
+      }
+      return `${durationHours}:${durationMinutes.toString().padStart(2, '0')}`;
+    },
+
+    async fetchUserInfo() {
       const docRef = doc(db, 'users', this.uid);
       const docSnapshot = await getDoc(docRef);
-  
-            if (docSnapshot.exists()) {
-              this.user = docSnapshot.data();
-              console.log(this.user)
-            } else {
-              console.log('No');
-            }
+
+      if (docSnapshot.exists()) {
+        this.user = docSnapshot.data();
+        console.log(this.user)
+      } else {
+        console.log('No');
+      }
     },
 
 
-    async fetchCalender(){
+    async fetchCalender() {
 
       const docRef = doc(db, 'users', this.uid, 'jobItems', this.currentMonth);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         console.log("Document data:", docSnap.data().calendar);
-        this.Calendar =  docSnap.data().calendar
+        this.Calendar = docSnap.data().calendar
       } else {
         // docSnap.data() will be undefined in this case
         console.log("No such document!");
@@ -142,24 +175,24 @@ export default {
       }
       return true;
     },
-  
+
     //申請しているか確認
     async checkReadyStatus() {
-    
+
       try {
-  
-          const docRef = doc(db, 'users', this.uid, 'jobItems', this.currentMonth);
-          const docSnapshot = await getDoc(docRef);
-          if (docSnapshot.exists()) {
-            this.userisReady = docSnapshot.data().isReady || false;
-            console.log('document!');
-          } else {
-            this.userisReady = false;
-            console.log('No');
-          }
-        } catch (error) {
-          console.error('Error checking ready status: ', error);
+
+        const docRef = doc(db, 'users', this.uid, 'jobItems', this.currentMonth);
+        const docSnapshot = await getDoc(docRef);
+        if (docSnapshot.exists()) {
+          this.userisReady = docSnapshot.data().isReady || false;
+          console.log('document!');
+        } else {
+          this.userisReady = false;
+          console.log('No');
         }
+      } catch (error) {
+        console.error('Error checking ready status: ', error);
+      }
     },
 
     //calendarのデータ取得処理等
@@ -192,7 +225,7 @@ export default {
           isWeekend: this.isWeekend(date)
         });
       }
-     
+
     },
 
     isWeekend(date) {
@@ -227,39 +260,38 @@ export default {
       handler() {
         // newMonthが変更されたときの処理を記述
 
-        this.Calendar =  [],
-      this.TAAndTechAssistantData = [],
-      this.teacherData = [],
-      this.ResearchRoomJobData =  [],
-      this.fetchUserInfo();
-      this.getMonthlyCalendar(); //今月のカレンダー
-        //ここを確認
+        this.Calendar = [],
+          this.TAAndTechAssistantData = [],
+          this.teacherData = [],
+          this.ResearchRoomJobData = [],
+          this.fetchUserInfo();
+        this.getMonthlyCalendar(); //今月のカレンダー
         this.fetchCalender();
         this.checkReadyStatus();
-       
+
       },
-      immediate: false, // ページロード時にも呼び出す
+      immediate: false, // ページロード時にも呼び出すか
     },
   },
   computed: {
     filteredCalendar() {
-  return this.Calendar.map(day => {
-    let filteredNotes;
+      return this.Calendar.map(day => {
+        let filteredNotes;
 
-    if (this.activeTab === '研究室バイト') {
-      // 研究室バイトタブが選択された場合、TAと技術補佐員以外を表示
-      filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員');
-    } else {
-      // その他のタブが選択された場合、対応する役割を表示
-      filteredNotes = day.notes.filter(note => note.content === this.activeTab);
-    }
+        if (this.activeTab === '研究室バイト') {
+          // 研究室バイトタブが選択された場合、TAと技術補佐員以外を表示
+          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員');
+        } else {
+          // その他のタブが選択された場合、対応する役割を表示
+          filteredNotes = day.notes.filter(note => note.content === this.activeTab);
+        }
 
-    // フィルタリングされたnotesがある場合、それをday.notesに設定
-    return filteredNotes.length > 0 ? { ...day, notes: filteredNotes } : { ...day, notes: [] };
-  });
-},
+        // フィルタリングされたnotesがある場合、それをday.notesに設定
+        return filteredNotes.length > 0 ? { ...day, notes: filteredNotes } : { ...day, notes: [] };
+      });
+    },
 
-  totalHoursPerContent() {
+    totalHoursPerContent() {
       const totals = {};
       this.filteredCalendar.forEach(day => {
         day.notes.forEach(note => {
@@ -359,7 +391,7 @@ th {
   width: 50px;
 }
 
-.disable-button{
+.disable-button {
   background-color: #cccccc;
 }
 
@@ -377,7 +409,7 @@ th {
   transition: background-color 0.3s;
 }
 
-.user-info{
+.user-info {
   margin-top: 10px;
   font-size: 30px;
 }
