@@ -1,8 +1,16 @@
 <template>
   <div>
     <br />
+    <div v-show=isLoading>
+      <br />
+
+    </div>
+    <div v-show=!isLoading>
     <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear"
       v-on:monthYearReceiver="receiveCurrentMonth" />
+    </div>
+
+  <div v-show=isLoading> Loading...</div>
     <br />
     <div class="header">
       <button class="apply-button" :disabled="!isReady" @click="handleApply"
@@ -13,6 +21,8 @@
         <button :class="{ active: activeTab === '技術補佐員' }" @click="activeTab = '技術補佐員'">技術補佐員</button>
       </div>
     </div>
+  
+
     <div>
       <br />
       <table>
@@ -112,6 +122,8 @@ export default {
       userisReady: false,
       hourlyRate: 900,
       roopCount: 0,
+      chanceCount: 0,
+      isLoading: false,
     };
   },
   components: {
@@ -141,6 +153,7 @@ export default {
       const duration = (endDate - startDate) / (1000 * 60 * 60);
       return duration.toFixed(2);
     },
+
 
     getFormattedDuration(note) {
       const [startHours, startMinutes] = note.startTime.split(':').map(Number);
@@ -353,7 +366,25 @@ export default {
         const docRef = collection(db, 'users', this.uid, 'jobItems', this.currentMonth, 'item');
         const querySnapshot = await getDocs(docRef);
         this.ResearchRoomJobData = querySnapshot.docs.map(doc => doc.data());
-        this.distributeWorkHours();
+
+        if(this.isReady){
+          this.distributeWorkHours();
+        }
+
+        if (this.chanceCount >= 500){
+          this.chanceCount = 0;
+          console.log("アルゴリズム1では，割り振れませんでした")
+          this.getMonthlyCalendar();
+
+          const result = confirm('自動割り振りに失敗しました．今月の総バイト時間を修正することをお勧めします．再度自動振り分けを実行しますか？（再度実行することで，割り振れることもあります．）')
+            if (!result) { return }
+            this.distributeWorkHours();
+
+
+        }
+        this.chanceCount = 0;
+       
+       
       } catch (error) {
         console.error('Error fetching Research Room Job data: ', error);
       }
@@ -365,7 +396,6 @@ export default {
         for (const day of this.Calendar) {
           if (entry.role != '時間割') {
             if (entry.date == day.date) {
-              console.log(entry.date, day.date)
               day.notes.push({
                 startTime: entry.startTime,
                 endTime: entry.endTime,
@@ -471,7 +501,6 @@ export default {
     //時間をランダム振り分け
     distributeWorkHours() {
 
-
       const jobs = this.ResearchRoomJobData;
       var weekdays = this.getWeekdaysInMonth(this.calendarYear, this.calendarMonth);
       weekdays = this.shuffleArray(weekdays);
@@ -500,7 +529,8 @@ export default {
 
 
     assignWork(weekdays, remainingMinutes, job, weeklyHours) {
-      while (remainingMinutes > 0) {
+      while (remainingMinutes > 0 && this.roopCount < 500) {
+        this.roopCount++;
         const randomIndex = Math.floor(Math.random() * weekdays.length);
         const day = weekdays[randomIndex];
         const weekNumber = this.getWeekNumber(day);
@@ -530,6 +560,16 @@ export default {
           weeklyHours[weekNumber] += workMinutes;
         }
       }
+      this.roopCount = 0;
+
+      while (remainingMinutes != 0 && this.chanceCount < 500){
+        this.chanceCount++ ;
+        console.log(this.chanceCount)
+
+        this.getMonthlyCalendar();
+        this.distributeWorkHours();
+      }
+      
     },
 
     getWeekNumber(date) {
@@ -546,7 +586,7 @@ export default {
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       const existingSchedules = [
         ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()]),
-        ...this.teacherData.filter(item => item.date === day.getDate()),
+        ...this.teacherData.filter(item => item.day === day.getDate()),
         ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
       ];
 
@@ -570,7 +610,6 @@ export default {
         const existingStart = this.convertTimeToMinutes(schedule.startTime);
         const existingEnd = this.convertTimeToMinutes(schedule.endTime);
         if (!(newEnd < existingStart || newStart > existingEnd)) {
-          console.log(schedule)
           return false;
         }
       }
@@ -644,6 +683,7 @@ export default {
   watch: {
     currentMonth: {
       async handler() {
+        this.isLoading = true;
         // Ensure the handler function is async to use await
         onAuthStateChanged(auth, async (user) => {
           if (user) {
@@ -670,6 +710,7 @@ export default {
           await this.fetchResearchRoomJobData(); // Fetch research room job data
           await this.updateCalendarWithTAAndTechAssistantData(); // Update the calendar with TA and Technical Assistant data
         }
+        this.isLoading = false;
       }
     }
   }

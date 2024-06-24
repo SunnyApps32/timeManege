@@ -24,7 +24,7 @@
                 <div class="login_name">&nbsp;{{ login_name }}</div>
 
                 <div class="header_menu">
-                    <div class="menu_item" v-on:click="goToTeacherSetting">Home</div>
+                    <div class="menu_item" v-on:click="goToHome">Home</div>
                     <div class="menu_item" v-on:click="goToUserList">申請者一覧</div>
                     <div class="menu_item" v-on:click="confirmLogout">Logout</div>
                 </div>

@@ -1,8 +1,10 @@
 <template>
   <div>
     <br />
-    <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear" @save="receiveAll"
-      v-on:monthYearReceiver="receiveCurrentMonth" />
+    <div v-show=!isLoading>
+      <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear" @save="receiveAll"
+        v-on:monthYearReceiver="receiveCurrentMonth" />
+    </div>
     <br />
     <div class="header">
       <button class="apply-button" :disabled="isReady" @click="handleApply">申請許可</button>
@@ -20,11 +22,11 @@
         </thead>
         <tbody>
           <tr v-for="day in Calendar" :key="day.date" :class="getDayClass(day)">
-            <td>{{ day.date }}</td>
-            <td>{{ day.weekday }}</td>
-            <td @click="day.isWeekend ? null : openModal(day)">
-              <div v-for="note in day.notes" :key="note.startTime">
-                <label>{{ note.startTime }} ~ {{ note.endTime }}</label>
+            <td @click="handleDayClick(day)">{{ day.date }}</td>
+            <td @click="handleDayClick(day)">{{ day.weekday }}</td>
+            <td @click="handleDayClick(day)">
+              <div v-for="(note, index) in day.notes" :key="note.startTime">
+                <div @click.stop="deleteNote(day, index)">{{ note.startTime }} ~ {{ note.endTime }}</div>
               </div>
             </td>
           </tr>
@@ -38,9 +40,9 @@
 <script>
 import MonthBar from '../components/MonthBar.vue';
 import Firebase from "../firebase/firebase";
-import { collection, addDoc, getFirestore, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getFirestore, doc, getDoc, setDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import TimePickerModal from '../components/TimePickerModal.vue';
+import TimePickerModal from '../components/TimePickerModal2.vue';
 
 const auth = Firebase.auth;
 const db = getFirestore();
@@ -58,6 +60,7 @@ export default {
       selectedDay: null,
       activeTab: '研究室バイト', // 追加: 現在のアクティブなタブを管理
       isReady: true,
+      isLoading: false,
     };
   },
   components: {
@@ -78,17 +81,23 @@ export default {
   },
   watch: {
     currentMonth: {
-      handler() {
+      async handler() {
+        this.isLoading = true;
         // newMonthが変更されたときの処理を記述
-        this.checkReadyStatus();
+        await this.checkReadyStatus();
+        this.isLoading = false;
       },
       immediate: true, // ページロード時にも呼び出す
     },
   },
   methods: {
-    openModal(day) {
+    handleDayClick(day) {
       this.selectedDay = day;
-      this.showModal = true;
+      if (!this.isReady) {
+      
+          this.showModal = true;
+        
+      }
     },
     closeModal() {
       this.showModal = false;
@@ -111,13 +120,25 @@ export default {
         }
 
         this.selectedDay.notes.push({
-            startTime: timeData.startTime,
-            endTime: timeData.endTime,
-            content: '記入不可'
-          });
+          id: docRef.id,
+          startTime: timeData.startTime,
+          endTime: timeData.endTime,
+          content: '記入不可'
+        });
         this.showModal = false;
       } catch (error) {
         console.error('Error adding : ', error);
+      }
+    },
+    async deleteNote(day, index) {
+      const note = day.notes[index];
+      if (confirm(`この時間 (${note.startTime} ~ ${note.endTime}) を削除しますか？`)) {
+        try {
+          await deleteDoc(doc(db, 'teacher', this.currentMonth, 'unAvailable', note.id));
+          day.notes.splice(index, 1);
+        } catch (error) {
+          console.error('Error deleting note: ', error);
+        }
       }
     },
     async checkAndCreateUserDoc() {
@@ -140,7 +161,6 @@ export default {
       try {
         const items = await getDocs(collection(db, 'teacher', this.currentMonth, 'unAvailable'));
         this.teacherData = items.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log(this.teacherData)
         this.updateCalendar();
       } catch (error) {
         console.error('Error fetching : ', error);
@@ -152,24 +172,20 @@ export default {
           if (day.date === entry.day) {
             if (!day.notes) {
               day.notes = [];
-            }else{
+            } else {
               day.notes.push({
-            startTime: entry.startTime,
-            endTime: entry.endTime,
-            content: this.activeTab
-          });
-              console.log(day.notes)
+                id: entry.id,
+                startTime: entry.startTime,
+                endTime: entry.endTime,
+                content: this.activeTab
+              });
               day.notes.sort((a, b) => {
-                console.log(a.startTime)
                 const [aHours, aMinutes] = a.startTime.split(':').map(Number);
                 const [bHours, bMinutes] = b.startTime.split(':').map(Number);
                 return aHours * 60 + aMinutes - (bHours * 60 + bMinutes);
-              })
+              });
             }
-           
           }
-
-       
         }
       }
     },
@@ -204,19 +220,11 @@ export default {
       }
       this.fetchTeacherData();
     },
-    // receiveMonth(month) {
-    //   //this.calendarMonth = month;
-    //   //this.getMonthlyCalendar();
-    // },
-    // receiveYear(year) {
-    //   // this.calendarYear = year;
-    //   // this.getMonthlyCalendar();
-    // },
     receiveAll(save) {
       this.currentMonth = save.yearMonth;
       this.calendarYear = save.year;
       this.calendarMonth = save.month;
-      console.log(this.currentMonth)
+      console.log(this.currentMonth);
       this.getMonthlyCalendar();
     },
     isWeekend(date) {
@@ -242,21 +250,18 @@ export default {
           this.isReady = false;
           console.log('No such document!');
         }
-        console.log(this.isReady)
-        console.log(this.currentMonth)
+        console.log(this.isReady);
+        console.log(this.currentMonth);
       } catch (error) {
-
         console.error('Error checking ready status: ', error);
       }
     },
-
     async handleApply() {
-
       try {
         const docRef = doc(db, 'teacher', this.currentMonth);
         await setDoc(docRef, { isReady: true });
 
-        const api_url = "https://script.google.com/macros/s/AKfycbwNopO0_rU9PS_VLkm-7eBxe8ijRCyqwI14KcRlsDw3ZvsOkbxrjeJP5T0mERlLqRht/exec"
+        const api_url = "https://script.google.com/macros/s/AKfycbwNopO0_rU9PS_VLkm-7eBxe8ijRCyqwI14KcRlsDw3ZvsOkbxrjeJP5T0mERlLqRht/exec";
 
         const params = new URLSearchParams();
         params.append('param1', 'value1');
@@ -268,27 +273,20 @@ export default {
             "Content-Type": "application/x-www-form-urlencoded"
           },
           mode: 'no-cors'
-
-          //body: params,
         })
           .then((response) => {
             response.text().then(() => {
-              //alert(text);
               alert('申請が許可されました');
             });
           })
           .catch((error) => {
             alert(error.message);
           });
-
-
       } catch (error) {
         console.error('Error updating document: ', error);
         alert('申請の許可に失敗しました');
       }
     },
-
-
   },
 };
 </script>
@@ -338,8 +336,6 @@ th {
   color: white;
 }
 
-
-
 .apply-button {
   float: right;
   margin-right: 20px;
@@ -359,7 +355,6 @@ th {
   background-color: #cccccc;
   cursor: not-allowed;
 }
-
 
 .day {
   width: 50px;

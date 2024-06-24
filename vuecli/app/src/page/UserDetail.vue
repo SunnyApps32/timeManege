@@ -5,12 +5,11 @@
     <button class="back-button" @click="goBack">戻る</button>
     <p class="apply-button">ステータス：{{ userisReady ? '確定済' : '未申請' }}</p>
 
+    {{this.currentMonth}}
     <h3 class="user-info">{{ user ? `${user.studentNum} ${user.name}` : 'Loading...' }}</h3>
     <br />
    
 
-    <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear"
-      v-on:monthYearReceiver="receiveCurrentMonth" />
     <br />
     <div class="header">
    
@@ -42,14 +41,36 @@
           </tr>
         </tbody>
       </table>
+
+      <table>
+
+<tbody>
+
+  <!-- 合計時間の行 -->
+  <tr>
+    <td style="text-align: right;"><strong>合計時間数:</strong></td>
+    <td>{{ totalHours.toFixed(2) }} 時間</td>
+  </tr>
+  <!-- 時給の入力フォーム -->
+  <tr>
+    <td style="text-align: right;"><strong>時給:</strong></td>
+    <td>
+      <input v-model.number="hourlyRate" type="number" placeholder="Enter Hourly Rate" />円
+    </td>
+  </tr>
+  <!-- 月収の行 -->
+  <tr>
+    <td style="text-align: right;"><strong>給与:</strong></td>
+    <td>{{ monthlyEarnings.toFixed(0) }} 円</td>
+  </tr>
+</tbody>
+</table>
     </div>
     <TimePickerModal :show="showModal" @close="closeModal" @save="saveTime" />
   </div>
 </template>
 
 <script>
-import MonthBar from '../components/MonthBar.vue';
-
 import { getFirestore, doc, getDoc, } from 'firebase/firestore';
 
 import TimePickerModal from '../components/TimePickerModal.vue';
@@ -59,17 +80,18 @@ const db = getFirestore();
 
 export default {
   props: {
-    userId: String
+    userId: String,
+    currentMonth_: String, 
   },
   data() {
     return {
-      calendarYear: this.getCurrentYear(),
-      calendarMonth: this.getCurrentMonth(),
+      calendarYear: this.calendarYear_,
+      calendarMonth: this.calendarMonth_,
       Calendar: [],
       TAAndTechAssistantData: [],
       teacherData: [],
       ResearchRoomJobData: [],
-      currentMonth: '',
+      currentMonth: this.currentMonth_,
       uid: this.userId,
       showModal: false,
       selectedDay: null,
@@ -77,17 +99,22 @@ export default {
       isReady: false,
       userisReady: false,
       user: null,
+      hourlyRate: 900,
     };
   },
   components: {
-    MonthBar,
     TimePickerModal,
     Menu
   },
   created() {
-   
+    this.fetchUserInfo();
+    this.getMonthlyCalendar();
+    this.fetchCalender();
+    this.checkReadyStatus();
   },
   methods: {
+
+    
     async fetchUserInfo(){
       const docRef = doc(db, 'users', this.uid);
       const docSnapshot = await getDoc(docRef);
@@ -167,17 +194,7 @@ export default {
       }
      
     },
-    receiveMonth(month) {
-      this.calendarMonth = month;
-      this.getMonthlyCalendar();
-    },
-    receiveYear(year) {
-      this.calendarYear = year;
-      this.getMonthlyCalendar(); // 年が変更された時にカレンダーを再取得する
-    },
-    receiveCurrentMonth(month) {
-      this.currentMonth = month;
-    },
+
     isWeekend(date) {
       const day = new Date(this.calendarYear, this.calendarMonth - 1, date).getDay();
       return day === 0 || day === 6;
@@ -194,7 +211,15 @@ export default {
 
     goBack() {
       this.$router.go(-1); // これで前のページに戻る
-    }
+    },
+    getNoteDurationInHours(note) {
+      const [startHours, startMinutes] = note.startTime.split(':').map(Number);
+      const [endHours, endMinutes] = note.endTime.split(':').map(Number);
+      const startDate = new Date(0, 0, 0, startHours, startMinutes);
+      const endDate = new Date(0, 0, 0, endHours, endMinutes);
+      const duration = (endDate - startDate) / (1000 * 60 * 60); // ミリ秒を時間に変換
+      return duration;
+    },
 
   },
   watch: {
@@ -233,7 +258,34 @@ export default {
     return filteredNotes.length > 0 ? { ...day, notes: filteredNotes } : { ...day, notes: [] };
   });
 },
-  }
+
+  totalHoursPerContent() {
+      const totals = {};
+      this.filteredCalendar.forEach(day => {
+        day.notes.forEach(note => {
+          if (!totals[note.content]) {
+            totals[note.content] = 0;
+          }
+          totals[note.content] += this.getNoteDurationInHours(note);
+        });
+      });
+      return totals;
+    },
+
+    totalHours() {
+      return this.filteredCalendar.reduce((sum, day) => {
+        return sum + day.notes.reduce((noteSum, note) => {
+          return noteSum + this.getNoteDurationInHours(note);
+        }, 0);
+      }, 0);
+    },
+
+    // 月収を計算するプロパティ
+    monthlyEarnings() {
+      return this.totalHours * this.hourlyRate;
+    },
+  },
+
 };
 </script>
 

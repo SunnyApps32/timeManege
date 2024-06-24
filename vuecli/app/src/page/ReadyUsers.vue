@@ -1,9 +1,10 @@
 <template>
      <Menu pageTitle="申請学生一覧" />
     <div>
-     
+      <div v-show=!isLoading>
       <MonthBar v-on:monthReceiver="receiveMonth" v-on:yearReceiver="receiveYear"
         v-on:monthYearReceiver="receiveCurrentMonth" />
+      </div>
      <br/>
      <br/>
       <ul>
@@ -28,7 +29,8 @@
         readyUsers: [],
         currentMonth: '',
         users: [],
-        documents: []
+        documents: [],
+        isLoading: false,
       };
     },
     components: {
@@ -75,15 +77,17 @@
       },
       handleUserClick(user) {
         console.log('User clicked:', user);
-        this.$router.push({ name: 'UserDetail', params: { userId: user.uid } });
+        this.$router.push({ name: 'UserDetail', params: { userId: user.uid, currentMonth_: this.currentMonth} });
       }
     },
     watch: {
       currentMonth: {
-        handler() {
+        async handler() {
+          this.isLoading = true;
           this.users = [];
           this.readyUsers = [];
-          this.fetchUserList();
+          await this.fetchUserList();
+          this.isLoading = false;
         },
         immediate: false,
       },

@@ -6,6 +6,7 @@
 
 <script>
 export default {
+
   data() {
     return {
       currentMonth: new Date(),
@@ -16,16 +17,17 @@ export default {
     this.currentMonth = new Date(
       this.currentMonth.getFullYear(),
       this.currentMonth.getMonth(),
-      1
     );
     this.updateAll();
   },
   methods: {
     prevMonth() {
+ 
       this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
       this.updateAll();
     },
     nextMonth() {
+
       this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
       this.updateAll();
     },
