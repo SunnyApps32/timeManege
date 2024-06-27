@@ -223,6 +223,7 @@ export default {
             }
           }
 
+
           return true;
         } else {
           return false
@@ -247,9 +248,20 @@ export default {
     },
     deleteSchedule(day) {
       // 削除する処理をここに追加します
+     
       const index = this.Calendar.findIndex(d => d.date === day.date);
+
+      
       if (index !== -1) {
-        this.Calendar[index].notes = [];
+        
+        let i = 0
+        for (const a of this.Calendar[index].notes){
+
+          if (a.content == this.activeTab){
+            this.Calendar[index].notes.splice(i)
+          }
+          i++;
+        }
       }
       //if (this.userisReady == true) {
         this.saveCalendarData();
@@ -262,7 +274,6 @@ export default {
     openModal(day) {
       this.selectedDay = day;
       this.showModal = true;
-      console.log(this.TAAndTechAssistantData)
     },
     closeModal() {
       this.showModal = false;
@@ -288,7 +299,6 @@ export default {
 
       for (const day of this.Calendar) {
         for (const note of day.notes) {
-          console.log(note.content)
           if (note.content == "TA" || note.content == "技術補佐員") {
             this.TAAndTechAssistantData.push({
               startTime: note.startTime,
@@ -311,8 +321,6 @@ export default {
       this.Calendar = [],
         this.getMonthlyCalendar(); //今月のカレンダー
       await this.fetchTeacherData(); //先生のデータを取得
-
-      console.log(this.TAAndTechAssistantData)
       await this.fetchResearchRoomJobData();
       await this.updateCalendarWithTAAndTechAssistantData();
 
@@ -399,9 +407,9 @@ export default {
         const querySnapshot = await getDocs(docRef);
         this.ResearchRoomJobData = querySnapshot.docs.map(doc => doc.data());
 
-        if (this.isReady) {
+        //if (this.isReady) {
           this.distributeWorkHours();
-        }
+        //}
 
         this.process();
 
@@ -538,7 +546,6 @@ export default {
 
     //時間をランダム振り分け
     distributeWorkHours() {
-
       const jobs = this.ResearchRoomJobData;
       var weekdays = this.getWeekdaysInMonth(this.calendarYear, this.calendarMonth);
       weekdays = this.shuffleArray(weekdays);
@@ -639,11 +646,11 @@ export default {
 
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       const existingSchedules = [
-        ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()]),
+        ...this.TAAndTechAssistantData.filter(item =>item.day === weekdays[day.getDay()] || item.date === day.getDate()),
         ...this.teacherData.filter(item => item.day === day.getDate()),
         ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
       ];
-
+  
       const labJobCount = dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員').length;
       const labJobs = [
         ...dayObj.notes.filter(note => note.content !== 'TA' || '技術補佐員')
@@ -657,8 +664,10 @@ export default {
       }
 
       for (const schedule of existingSchedules) {
+        
         const existingStart = this.convertTimeToMinutes(schedule.startTime);
         const existingEnd = this.convertTimeToMinutes(schedule.endTime);
+
         if (!(newEnd < existingStart || newStart > existingEnd)) {
           return false;
         }
@@ -767,23 +776,22 @@ export default {
         if (calendarExists) {
           console.log('Calendar exists and has been fetched.');
 
-          let totalHou = 0
+          let totalHou = 0;
           try {
             const docRef = collection(db, 'users', this.uid, 'jobItems', this.currentMonth, 'item');
             const querySnapshot = await getDocs(docRef);
             const a = querySnapshot.docs.map(doc => doc.data());
             for (const i of a) {
-              totalHou += i.time
-            }
-            console.log("total:" + totalHou)
+              totalHou += Number(i.time)
 
+            }
           } catch (error) {
             console.error('Error fetching Research Room Job data: ', error);
           }
           if (this.totalHours != totalHou) {
-            console.log("total:" + totalHou)
             this.Calendar = []
             this.getMonthlyCalendar();
+            await this.fetchTeacherData(); // Fetch teacher data
             await this.fetchResearchRoomJobData(); // Fetch research room job data
             await this.updateCalendarWithTAAndTechAssistantData(); // Update the calendar with TA and Technical Assistant data
           }
