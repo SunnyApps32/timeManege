@@ -589,9 +589,6 @@ export default {
         // 19時間45分を分に変換
         const maxWeeklyMinutes = 19 * 60 + 45;
         const maxMinutes = Math.min(345, maxWeeklyMinutes - weeklyHours[weekNumber]); // 週の残り時間を考慮
-        if (maxMinutes <= 0) {
-          continue; // 週の残り時間がない場合、次の日へ
-        }
 
         let minMinutes = 0;
         if (remainingMinutes > 1800) {
@@ -613,16 +610,25 @@ export default {
         if (workMinutes > maxWorkMinutesPerShift) {
           workMinutes = maxWorkMinutesPerShift;
         }
-
+        //週の合計時間が19:45を超えないように
+        console.log(maxWeeklyMinutes , weeklyHours[weekNumber] + workMinutes)
+        if (maxWeeklyMinutes <= weeklyHours[weekNumber] + workMinutes){
+          console.log("workMinutes")
+          workMinutes = weeklyHours[weekNumber] + workMinutes - maxWeeklyMinutes
+          console.log(workMinutes)
+        }
         const newStart = this.convertTimeToMinutes(this.generateRandomTime(workMinutes));
         const newEnd = newStart + workMinutes;
 
         if (this.checkAvailability(day, newStart, newEnd)) {
-          this.assignWorkToDay(day, newStart, newEnd, job.content);
-          remainingMinutes -= workMinutes;
-          weeklyHours[weekNumber] += workMinutes;
+            this.assignWorkToDay(day, newStart, newEnd, job.content);
+            remainingMinutes -= workMinutes;
+            weeklyHours[weekNumber] += workMinutes;
+
         }
+       
       }
+      console.log(weeklyHours)
       this.roopCount = 0;
 
       while (remainingMinutes != 0 && this.chanceCount < this.maxRoopCount) {
@@ -687,6 +693,8 @@ export default {
       const endOfDayMinutes = 17 * 60 + 15;
       return newStart >= startOfDayMinutes && newEnd <= endOfDayMinutes;
     },
+
+
 
 
     generateRandomTime(workMinutes) {
