@@ -280,7 +280,7 @@ export default {
 
         if (this.activeTab === '研究室バイト') {
           // 研究室バイトタブが選択された場合、TAと技術補佐員以外を表示
-          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員');
+          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' &&  note.content !== '時間割' &&  note.content !== '記入不可時間');
         } else {
           // その他のタブが選択された場合、対応する役割を表示
           filteredNotes = day.notes.filter(note => note.content === this.activeTab);
