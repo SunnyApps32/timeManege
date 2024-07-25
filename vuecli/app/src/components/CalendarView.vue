@@ -13,7 +13,7 @@
     <div v-show=isLoading> Loading... (最大数十秒お待ちください)</div>
     <br />
     <div class="header">
-      <button class="apply-button" :disabled="!isReady" @click="handleApply" :class="{ 'disable-button': userisReady }">{{
+      <button class="apply-button" :disabled="!isReady || userisReady" @click="handleApply" :class="{ 'disable-button': userisReady }">{{
         userisReady ? '確定済み' : '確定' }}</button>
       <div class="tabs">
         <button :class="{ active: activeTab === '研究室バイト' }" @click="activeTab = '研究室バイト'">研究室バイト</button>
@@ -445,7 +445,8 @@ export default {
 
       // 週ごとの合計時間を追跡するためのデータ構造
       const weeklyHours = {};
-
+      this.initializeWeeklyHoursWithTAAndTechAssistant(weeklyHours, weekdays);
+      console.log(weeklyHours)
 
       for (const job of jobs) {
         const totalWorkMinutes = parseFloat(job.time) * 60;
@@ -518,6 +519,7 @@ export default {
           //勤務の間に45分空いているか
           const _object = this.returnOthers(day)[0]
 
+          console.log(day)
           const noteStart = this.convertTimeToMinutes(_object.startTime);
           const noteEnd = this.convertTimeToMinutes(_object.endTime);
 
@@ -560,11 +562,12 @@ export default {
       const dayObj = this.Calendar.find(d => d.date === day.getDate());
       if (!dayObj) return 0;
 
+     
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       const existingSchedules = [
+       ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()] || item.date === day.getDate()),
         ...dayObj.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' && note.content !== '記入不可時間' && note.content !== '時間割')
       ];
-
-
 
       return existingSchedules.length;
     },
@@ -573,8 +576,10 @@ export default {
       const dayObj = this.Calendar.find(d => d.date === day.getDate());
       if (!dayObj) return 0;
 
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       const existingSchedules = [
-        ...dayObj.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' && note.content !== '記入不可時間'  && note.content !== '時間割')
+      ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()] || item.date === day.getDate()),
+        ...dayObj.notes.filter(note =>  note.content !== 'TA' &&  note.content !== '技術補佐員' && note.content !== '記入不可時間'  && note.content !== '時間割')
       ];
 
       let totalTime = 0
@@ -593,7 +598,10 @@ export default {
       const dayObj = this.Calendar.find(d => d.date === day.getDate());
       if (!dayObj) return 0;
 
+
+      const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       const existingSchedules = [
+      ...this.TAAndTechAssistantData.filter(item => item.day === weekdays[day.getDay()] || item.date === day.getDate()),
         ...dayObj.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' && note.content !== '記入不可時間' && note.content !== '時間割' )
       ];
       return existingSchedules;
@@ -696,16 +704,17 @@ export default {
         //予定がない&&スタート時間が設定されていない＝空白の始点
         if (flag >= 1 && _start == null) {
           _start = order.time
-
+          _start += 15 - (_start % 15)
           //予定が入った&スタート時間が設定されている＝空白の終点
         } else if (flag < 1 && _start != null) {
           _end = order.time
-
+          _end -= _end % 15
           if (_start == startOfDayMinutes) {
             if (_end - _start - 15 > 0) {
 
               if (_start == startOfDayMinutes) {
                 _start += 15
+                _start += 15 - (_start % 15)
               }
               freePeriods.push({ start: _start + 15, end: _end - 15, duration: _end - _start - 30 });
             }
@@ -842,12 +851,37 @@ export default {
       var weekdays = this.getWeekdaysInMonth(this.calendarYear, this.calendarMonth);
       //weekdays = this.shuffleArray(weekdays);
       // 週ごとの合計時間を追跡するためのデータ構造
-      const weeklyHours = {};
+      let weeklyHours = {};
+
+     
+      weeklyHours = this.initializeWeeklyHoursWithTAAndTechAssistant(weeklyHours, weekdays);
+
+      console.log(weeklyHours)
       for (const job of jobs) {
         const totalWorkMinutes = parseFloat(job.time) * 60;
         await this.assignWork(weekdays, totalWorkMinutes, job, weeklyHours);
       }
     },
+
+    initializeWeeklyHoursWithTAAndTechAssistant(weeklyHours, weekdays) {
+  for (const entry of this.TAAndTechAssistantData) {
+    console.log(entry.date)
+   
+    const weekNumber = this.getWeekNumber(new Date(entry.date));
+    console.log(weekNumber)
+    console.log(weekdays[entry.date - 1])
+    const startMinutes = this.convertTimeToMinutes(entry.startTime);
+    const endMinutes = this.convertTimeToMinutes(entry.endTime);
+    const duration = endMinutes - startMinutes;
+
+    if (!weeklyHours[weekNumber]) {
+      weeklyHours[weekNumber] = 0;
+    }
+
+    weeklyHours[weekNumber] += duration;
+  }
+  return weeklyHours
+},
 
 
     async assignWork(weekdays, remainingMinutes, job, weeklyHours) {
@@ -859,6 +893,7 @@ export default {
         const randomIndex = Math.floor(Math.random() * weekdays.length);
         const day = weekdays[randomIndex];
         const weekNumber = this.getWeekNumber(day);
+  
 
         // 週のデータの保存領域がなければ追加
         if (!weeklyHours[weekNumber]) {
