@@ -17,6 +17,7 @@
         <button :class="{ active: activeTab === '研究室バイト' }" @click="activeTab = '研究室バイト'">研究室バイト</button>
         <button :class="{ active: activeTab === 'TA' }" @click="activeTab = 'TA'">TA</button>
         <button :class="{ active: activeTab === '技術補佐員' }" @click="activeTab = '技術補佐員'">技術補佐員</button>
+        <button :class="{ active: activeTab === '記入不可時間' }" @click="activeTab = '記入不可時間'">記入不可時間</button>
       </div>
     </div>
     <div>
@@ -48,10 +49,9 @@
         </tbody>
       </table>
 
+      <div v-if="activeTab !== '記入不可時間'">
       <table>
-
         <tbody>
-
           <!-- 合計時間の行 -->
           <tr>
             <td style="text-align: right;"><strong>合計時間数:</strong></td>
@@ -71,6 +71,14 @@
           </tr>
         </tbody>
       </table>
+      <h1>内容ごとの合計時間</h1>
+      <ul>
+        <li v-for="(totalHours, content) in totalHoursPerContent" :key="content">
+          {{ content }}: {{ totalHours.toFixed(2) }} 時間
+        </li>
+      </ul>
+    </div>
+
     </div>
     <TimePickerModal :show="showModal" @close="closeModal" @save="saveTime" />
   </div>
@@ -106,6 +114,8 @@ export default {
       userisReady: false,
       user: null,
       hourlyRate: 900,
+      hourlyRateForTa: 1000,
+      hourlyRateForTech: 950,
     };
   },
   components: {
@@ -277,19 +287,20 @@ export default {
     filteredCalendar() {
       return this.Calendar.map(day => {
         let filteredNotes;
-
         if (this.activeTab === '研究室バイト') {
           // 研究室バイトタブが選択された場合、TAと技術補佐員以外を表示
-          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' &&  note.content !== '時間割' &&  note.content !== '記入不可時間');
+          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員');
+          filteredNotes = day.notes.filter(note => note.content !== 'TA' && note.content !== '技術補佐員' && note.content !== '記入不可時間' && note.content !== '時間割' );
+        } else if (this.activeTab === '記入不可時間') {
+          filteredNotes = day.notes.filter(note => note.content === '記入不可時間' || note.content === '時間割');
         } else {
           // その他のタブが選択された場合、対応する役割を表示
           filteredNotes = day.notes.filter(note => note.content === this.activeTab);
         }
-
         // フィルタリングされたnotesがある場合、それをday.notesに設定
         return filteredNotes.length > 0 ? { ...day, notes: filteredNotes } : { ...day, notes: [] };
       });
-    },
+    }, 
 
     totalHoursPerContent() {
       const totals = {};
@@ -314,7 +325,12 @@ export default {
 
     // 月収を計算するプロパティ
     monthlyEarnings() {
-      return this.totalHours * this.hourlyRate;
+      if (this.activeTab == '研究室バイト') {
+        return this.totalHours * this.hourlyRate;
+      } else if (this.activeTab == 'TA') {
+        return this.totalHours * this.hourlyRateForTa;
+      }
+      return this.totalHours * this.hourlyRateForTech;
     },
   },
 
